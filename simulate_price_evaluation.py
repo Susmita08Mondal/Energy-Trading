@@ -16,8 +16,9 @@ def gradient(x):
 # Gradient of the Lagrangian function
 def lagrangian_gradient(x, lambda_values):
     grad_objective = gradient(x)
-    grad_constraints = np.array([0, 0, 0, 0, \
-                                 -lambda_values[0], -lambda_values[1], -lambda_values[2], -lambda_values[3], -lambda_values[4], lambda_values[5], lambda_values[6], lambda_values[7], lambda_values[8] ])
+    penalties = [x[3] + x[2] - x[1] - x[0], 0.5 - x[0], 0.5 - x[1], 2 - x[2], 2 - x[3], x[0] - 12, x[1] - 12, x[2] - 15, x[3] - 15]
+    grad_constraints=np.zeros(13)
+    grad_constraints[4:] += np.array(penalties)
     grad_constraints[:4] += np.array([-lambda_values[0], -lambda_values[0], lambda_values[0], lambda_values[0] ])
     grad_constraints[0] += (lambda_values[5]-lambda_values[1])
     grad_constraints[1] += (lambda_values[6]-lambda_values[2])
@@ -36,7 +37,7 @@ def lagrangian_subgradient_method(x0, lambda0, learning_rate, iterations):
         grad_x, grad_lambdas = lagrangian_gradient(x, lambda_values)
         # print("Grad_x",grad_x)
         # print("Grad_lambdas",grad_lambdas)
-        # print("X",x)
+        print("X",x)
         # Update x using the subgradient
         x = x - learning_rate * grad_x[:4]
 
