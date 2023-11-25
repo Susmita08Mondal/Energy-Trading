@@ -37,7 +37,7 @@ def lagrangian_subgradient_method(x0, lambda0, learning_rate, iterations):
         grad_x, grad_lambdas = lagrangian_gradient(x, lambda_values)
         # print("Grad_x",grad_x)
         # print("Grad_lambdas",grad_lambdas)
-        print("X",x)
+        # print("X",x)
         # Update x using the subgradient
         x = x - learning_rate * grad_x[:4]
 
@@ -61,7 +61,7 @@ def lagrangian_subgradient_method(x0, lambda0, learning_rate, iterations):
         if(np.linalg.norm(grad_x)< 10**-4):
             print("Grad_x", i,grad_x)
             print("Breaking...")
-            return grad_x, grad_lambdas
+            return x, grad_lambdas
     return x, lambda_values
 
 # Initial guess
