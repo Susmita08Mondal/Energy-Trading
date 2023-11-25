@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract ShamirSecretSharing {
-    uint256 constant p = 257; // Prime number
+    uint256 constant p = 256; // Prime number
     uint256 constant threshold = 3; // Threshold value
 
     struct Share {

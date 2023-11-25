@@ -1,77 +1,77 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract AggregatedDataDecryption {
-    uint constant f = 1; // Adjust this based on the actual fault tolerance requirements
-
-    struct Delegate {
-        bool committed;
-        // Include additional information as needed
+contract DelegateSelection {
+    address public owner;
+    uint256 public votingEndTime;
+    
+    mapping(address => uint256) public votes;
+    address[] public participants;
+    address[] public delegateCommittee;
+    
+    event Voted(address indexed voter, address indexed delegate);
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+    
+    modifier votingOpen() {
+        require(block.timestamp < votingEndTime, "Voting has ended");
+        _;
     }
 
-    mapping(address => Delegate) public delegates;
-
-    function calculateAggregatedData(
-        uint[] memory aValues,
-        uint[] memory bValues
-    )
-        public
-        pure
-        returns (uint[2] memory)
-    {
-        require(aValues.length == bValues.length, "Array lengths do not match");
-
-        uint sumA;
-        uint sumB;
-
-        for (uint i = 0; i < aValues.length; i++) {
-            sumA += aValues[i];
-            sumB += bValues[i];
-        }
-
-        return [sumA, sumB];
+    modifier votingClosed() {
+        require(block.timestamp >= votingEndTime, "Voting is still open");
+        _;
     }
 
-    function getCorrectAggregatedData(
-        address[] memory delegateAddresses,
-        uint[][] memory aValues,
-        uint[][] memory bValues
-    )
-        public
-        pure
-        returns (uint[2] memory)
-    {
-        require(
-            delegateAddresses.length == aValues.length && aValues.length == bValues.length,
-            "Array lengths do not match"
-        );
+    constructor(address[] memory _participants, uint256 _votingDuration) {
+        owner = msg.sender;
+        participants = _participants;
+        votingEndTime = block.timestamp + _votingDuration;
+    }
 
-        uint maxCount = 0;
-        uint[2] memory correctAggregatedData;
+    function vote(address delegate) external votingOpen {
+        require(isParticipant(msg.sender), "Not a participant");
+        require(isParticipant(delegate), "Delegate is not a participant");
+        require(msg.sender != delegate, "Cannot vote for yourself");
 
-        for (uint i = 0; i < 2**(delegateAddresses.length); i++) {
-            uint count = 0;
-            uint[] memory selectedAValues = new uint[](delegateAddresses.length);
-            uint[] memory selectedBValues = new uint[](delegateAddresses.length);
+        votes[delegate]++;
+        emit Voted(msg.sender, delegate);
+    }
 
-            for (uint j = 0; j < delegateAddresses.length; j++) {
-                if ((i & (1 << j)) != 0) {
-                    count++;
-                    selectedAValues[j] = aValues[j][count - 1];
-                    selectedBValues[j] = bValues[j][count - 1];
-                }
+    function isParticipant(address participant) public view returns (bool) {
+        for (uint256 i = 0; i < participants.length; i++) {
+            if (participants[i] == participant) {
+                return true;
             }
+        }
+        return false;
+    }
 
-            if (count == f + 1) {
-                uint[2] memory aggregatedData = calculateAggregatedData(selectedAValues, selectedBValues);
+    function getDelegateCommittee(uint256 d) external onlyOwner votingClosed {
+        require(d <= participants.length, "Invalid committee size");
 
-                if (count > maxCount) {
-                    maxCount = count;
-                    correctAggregatedData = aggregatedData;
+        address[] memory sortedParticipants = sortParticipantsByVotes();
+        delegateCommittee = new address[](d);
+
+        for (uint256 i = 0; i < d; i++) {
+            delegateCommittee[i] = sortedParticipants[i];
+        }
+    }
+
+    function sortParticipantsByVotes() internal view returns (address[] memory) {
+        address[] memory sorted = participants;
+
+        for (uint256 i = 0; i < sorted.length - 1; i++) {
+            for (uint256 j = 0; j < sorted.length - i - 1; j++) {
+                if (votes[sorted[j]] < votes[sorted[j + 1]]) {
+                    (sorted[j], sorted[j + 1]) = (sorted[j + 1], sorted[j]);
                 }
             }
         }
 
-        return correctAggregatedData;
+        return sorted;
     }
 }
